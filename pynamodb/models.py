@@ -1,6 +1,7 @@
 """
 DynamoDB Models for PynamoDB
 """
+import gzip
 import json
 import time
 import six
@@ -633,9 +634,12 @@ class Model(with_metaclass(MetaModel)):
     @classmethod
     def dump(cls, filename):
         """
-        Writes the contents of this model's table as JSON to the given filename
+        Writes the contents of this model's table as gzip'd JSON to the given filename
         """
-        with open(filename, 'w') as out:
+        if not filename.endswith('.gz'):
+            filename += '.gz'
+
+        with gzip.open(filename, 'wb') as out:
             for item in cls.dumps():
                 out.write(item + '\n')
 
@@ -649,10 +653,10 @@ class Model(with_metaclass(MetaModel)):
     @classmethod
     def load(cls, filename):
         """
-        Reads a file dump of JSON-encoded items, loads model objects,
+        Reads a gzip'd file dump of JSON-encoded items, loads model objects,
         and batch writes back to DynamoDB
         """
-        with open(filename, 'r') as inf:
+        with gzip.open(filename, 'rb') as inf:
             with cls.batch_write() as batch:
                 for item_data in inf.readlines():
                     batch.save(cls.loads(item_data))
